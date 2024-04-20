@@ -28,7 +28,7 @@ const sendRequest = async () => {
 
   measurements[bin] = (measurements[bin] || 0) + 1;
 
-  console.log(`Histogram for ${url} with maxRate: ${maxRate} requests per second:`);
+  console.log(`Histogram for ${url} limit ${limit} with maxRate: ${maxRate} requests per second:`);
   for (const bin in measurements) {
     console.log(`${bin} ms: ${measurements[bin]}`);
   }
@@ -39,7 +39,7 @@ const sendRequest = async () => {
   if (outputFile) {
     if (!outputStream) {
       outputStream = fs.createWriteStream(outputFile, { flags: "a" });
-      outputStream.write(`Histogram for ${url} with maxRate: ${maxRate} requests per second:\n`);
+      outputStream.write(`Histogram for ${url} limit ${limit} with maxRate: ${maxRate} requests per second:\n`);
     }
     outputStream.write(`${duration} ms\n`);
   }
