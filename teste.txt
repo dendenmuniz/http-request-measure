@@ -1,0 +1,6 @@
+Histogram for http://www.google.com limit 10 with maxRate: 2 requests per second:
+67-93 ms: 8
+93-119 ms: 0
+119-144 ms: 1
+144-170 ms: 0
+170-196 ms: NaN

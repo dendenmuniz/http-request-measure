@@ -7,7 +7,7 @@ const maxRate = process.argv[4] || 4;
 const outputFile = process.argv[5];
 
 let requestsMade = 0;
-let measurements = {};
+let measurements = [];
 let outputStream;
 
 const sendRequest = async () => {
@@ -24,30 +24,51 @@ const sendRequest = async () => {
   }
   const endTime = new Date();
   const duration = endTime - startTime;
-  const bin = Math.floor(duration / 50) * 50;
-
-  measurements[bin] = (measurements[bin] || 0) + 1;
-
-  console.log(`Histogram for ${url} limit ${limit} with maxRate: ${maxRate} requests per second:`);
-  for (const bin in measurements) {
-    console.log(`${bin} ms: ${measurements[bin]}`);
-  }
+  measurements.push(duration);
 
   requestsMade++;
-
-  // Write measurements to file if specified
-  if (outputFile) {
-    if (!outputStream) {
-      outputStream = fs.createWriteStream(outputFile, { flags: "a" });
-      outputStream.write(`Histogram for ${url} limit ${limit} with maxRate: ${maxRate} requests per second:\n`);
-    }
-    outputStream.write(`${duration} ms\n`);
-  }
 
   // Throttle requests
   setTimeout(() => {
     if (requestsMade < limit) {
       sendRequest();
+    } else {
+      // Calculate histogram bins based on the measured data
+      const minDuration = Math.min(...measurements); //round the minimum nearest whole number
+      const maxDuration = Math.ceil(Math.max(...measurements)); //round the maximum nearest whole number
+      const numBins = Math.ceil(Math.log2(measurements.length));
+      const binSize = (maxDuration - minDuration) / numBins;
+      const histogram = {};
+      for (let i = 0; i < numBins; i++) {
+        const binStart = minDuration + i * binSize;
+        const binEnd = binStart + binSize;
+        histogram[`${binStart.toFixed(0)}-${binEnd.toFixed(0)} ms`] = 0;
+      }
+      for (const duration of measurements) {
+        const binIndex = Math.floor((duration - minDuration) / binSize);
+        const binStart = minDuration + binIndex * binSize;
+        const binEnd = binStart + binSize;
+        histogram[`${binStart.toFixed(0)}-${binEnd.toFixed(0)} ms`]++;
+      }
+
+      console.log(
+        `Histogram for ${url} limit: ${limit} with maxRate: ${maxRate} requests per second:`
+      );
+      for (const bin in histogram) {
+        console.log(`${bin}: ${histogram[bin]}`);
+      }
+      // Write measurements to file if specified
+      if (outputFile) {
+        if (!outputStream) {
+          outputStream = fs.createWriteStream(outputFile, { flags: "a" });
+          outputStream.write(
+            `Histogram for ${url} limit: ${limit} with maxRate: ${maxRate} requests per second:\n`
+          );
+        }
+        for (const bin in histogram) {
+          outputStream.write(`${bin}: ${histogram[bin]}\n`);
+        }
+      }
     }
   }, 1000 / maxRate);
 };
