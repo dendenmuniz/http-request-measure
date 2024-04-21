@@ -28,12 +28,15 @@ const sendRequest = async () => {
 
   requestsMade++;
 
+
   // Throttle requests
   setTimeout(() => {
+    printResults();
     if (requestsMade < limit) {
       sendRequest();
-    } else {
-      // Calculate histogram bins based on the measured data
+    }
+
+    function printResults() {
       const minDuration = Math.min(...measurements); //round the minimum nearest whole number
       const maxDuration = Math.ceil(Math.max(...measurements)); //round the maximum nearest whole number
       const numBins = Math.ceil(Math.log2(measurements.length));
