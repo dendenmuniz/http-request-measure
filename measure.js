@@ -10,6 +10,7 @@ const outputFile = process.argv[5];
 let requestsMade = 0;
 let measurements = [];
 let outputStream;
+let histogram;
 
 const sendRequest = async () => {
   if (requestsMade >= limit) {
@@ -42,6 +43,16 @@ const sendRequest = async () => {
 };
 
 function printResults() {
+  histogram = generateHistogram();
+  // Move cursor to beginning of output
+  process.stdout.write("\x1B[0f");
+  console.log(
+    `Histogram for ${url} limit ${limit} with maxRate: ${maxRate} requests per second:`
+  );
+  console.log(createHistogramTable(histogram).toString());
+}
+
+function generateHistogram() {
   const minDuration = Math.min(...measurements);
   const maxDuration = Math.ceil(Math.max(...measurements));
   const numBins = Math.ceil(Math.log2(measurements.length));
@@ -58,23 +69,7 @@ function printResults() {
     const binEnd = binStart + binSize;
     histogram[`${binStart.toFixed(0)}-${binEnd.toFixed(0)} ms`]++;
   }
-
-  // Move cursor to beginning of output
-  process.stdout.write("\x1B[0f");
-
-  const table = new Table({
-    head: ["Bin", "Count"],
-    colWidths: [30, 10],
-  });
-
-  for (const bin in histogram) {
-    table.push([bin, isNaN(histogram[bin]) ? 0 : histogram[bin]]);
-  }
-
-  console.log(
-    `Histogram for ${url} limit${limit} with maxRate: ${maxRate} requests per second:`
-  );
-  console.log(table.toString());
+  return histogram;
 }
 
 function createHistogramTable(histogram) {
@@ -91,32 +86,6 @@ function createHistogramTable(histogram) {
 }
 
 function printFinalResults() {
-  const minDuration = Math.min(...measurements);
-  const maxDuration = Math.ceil(Math.max(...measurements));
-  const numBins = Math.ceil(Math.log2(measurements.length));
-  const binSize = (maxDuration - minDuration) / numBins;
-  const histogram = {};
-  for (let i = 0; i < numBins; i++) {
-    const binStart = minDuration + i * binSize;
-    const binEnd = binStart + binSize;
-    histogram[`${binStart.toFixed(0)}-${binEnd.toFixed(0)} ms`] = 0;
-  }
-  for (const duration of measurements) {
-    const binIndex = Math.floor((duration - minDuration) / binSize);
-    const binStart = minDuration + binIndex * binSize;
-    const binEnd = binStart + binSize;
-    histogram[`${binStart.toFixed(0)}-${binEnd.toFixed(0)} ms`]++;
-  }
-
-  const table = new Table({
-    head: ["Bin", "Count"],
-    colWidths: [30, 10],
-  });
-
-  for (const bin in histogram) {
-    table.push([bin, histogram[bin]]);
-  }
-
   // Write final measurements to file
   if (outputFile) {
     outputStream = fs.createWriteStream(outputFile);
