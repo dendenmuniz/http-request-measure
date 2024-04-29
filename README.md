@@ -1,4 +1,4 @@
-# Request Duration Measurement Tool
+# HTTP Request Duration Measurement Tool
 
 This Node.js program measures the duration of HTTP requests to a specified URL and generates a histogram of the request durations.
 
